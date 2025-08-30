@@ -1,3 +1,5 @@
+import LineDropGame from "@/components/LineDropGame";
+
 const Index = () => {
   return (
     <main className="min-h-screen bg-gradient-subtle">
@@ -29,8 +31,8 @@ const Index = () => {
 
           {/* Game Section */}
           <section className="mb-16 animate-slide-up">
-            <div className="bg-card shadow-soft rounded-2xl p-8 md:p-12 border border-border/50 transition-smooth hover:shadow-elegant">
-              <div className="text-center py-12">
+            <div className="bg-card shadow-soft rounded-2xl border border-border/50 transition-smooth hover:shadow-elegant overflow-hidden">
+              <div className="p-8 md:p-12 text-center border-b border-border/50">
                 <div className="w-20 h-20 bg-green-500 rounded-full mx-auto mb-6 flex items-center justify-center">
                   <div className="w-10 h-10 bg-white rounded-full"></div>
                 </div>
@@ -39,12 +41,9 @@ const Index = () => {
                   Test your timing skills! Stop the falling line exactly on the target to score points. 
                   Press spacebar or click when you think the line is at the center.
                 </p>
-                <a 
-                  href="/game" 
-                  className="inline-block px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/50"
-                >
-                  Play Now
-                </a>
+              </div>
+              <div className="h-96">
+                <LineDropGame />
               </div>
             </div>
           </section>
