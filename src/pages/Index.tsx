@@ -27,6 +27,28 @@ const Index = () => {
             </div>
           </section>
 
+          {/* Game Section */}
+          <section className="mb-16 animate-slide-up">
+            <div className="bg-card shadow-soft rounded-2xl p-8 md:p-12 border border-border/50 transition-smooth hover:shadow-elegant">
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-green-500 rounded-full mx-auto mb-6 flex items-center justify-center">
+                  <div className="w-10 h-10 bg-white rounded-full"></div>
+                </div>
+                <h2 className="text-3xl font-semibold text-foreground mb-4">Line Drop Game</h2>
+                <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                  Test your timing skills! Stop the falling line exactly on the target to score points. 
+                  Press spacebar or click when you think the line is at the center.
+                </p>
+                <a 
+                  href="/game" 
+                  className="inline-block px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/50"
+                >
+                  Play Now
+                </a>
+              </div>
+            </div>
+          </section>
+
           {/* Grid layout - ready for your modules */}
           <section className="grid md:grid-cols-2 gap-8 animate-slide-up">
             <div className="bg-card shadow-soft rounded-xl p-6 border border-border/50 transition-smooth hover:shadow-elegant">
