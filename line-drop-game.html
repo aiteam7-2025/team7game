@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Drop Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            text-align: center;
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 100%);
+        }
+
+        .falling-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 4px;
+            height: 60px;
+            background: linear-gradient(180deg, #00ff88 0%, #00cc6a 100%);
+            border-radius: 2px;
+            box-shadow: 0 0 10px #00ff88;
+            transform: translateX(-50%);
+            transition: top 0.1s ease-out;
+        }
+
+        .target-line {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 2px;
+            border-top: 2px dotted #ff6b6b;
+            transform: translateY(-50%);
+        }
+
+        .start-button, .play-again-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .start-button:hover, .play-again-button:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 0 20px #00ff88;
+        }
+
+        .score-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #00ff88;
+        }
+
+        .current-score {
+            font-size: 24px;
+            color: #00ff88;
+            margin-bottom: 5px;
+        }
+
+        .total-score {
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .round-result {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #00ff88;
+            text-align: center;
+            z-index: 5;
+            display: none;
+        }
+
+        .result-score {
+            font-size: 32px;
+            color: #00ff88;
+            margin: 20px 0;
+        }
+
+        .result-message {
+            font-size: 18px;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #666;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-area">
+            <div class="falling-line hidden" id="fallingLine"></div>
+            <div class="target-line" id="targetLine"></div>
+            
+            <button class="start-button" id="startButton">Start Game</button>
+            <button class="play-again-button hidden" id="playAgainButton">Play Again</button>
+            
+            <div class="score-display" id="scoreDisplay">
+                <div class="current-score">Score: <span id="currentScore">0</span></div>
+                <div class="total-score">Total: <span id="totalScore">0</span></div>
+            </div>
+            
+            <div class="round-result" id="roundResult">
+                <div class="result-message" id="resultMessage"></div>
+                <div class="result-score" id="resultScore"></div>
+            </div>
+            
+            <div class="instructions">
+                Press SPACEBAR or CLICK to stop the falling line on the target
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LineDropGame {
+            constructor() {
+                this.fallingLine = document.getElementById('fallingLine');
+                this.targetLine = document.getElementById('targetLine');
+                this.startButton = document.getElementById('startButton');
+                this.playAgainButton = document.getElementById('playAgainButton');
+                this.scoreDisplay = document.getElementById('scoreDisplay');
+                this.roundResult = document.getElementById('roundResult');
+                this.currentScoreSpan = document.getElementById('currentScore');
+                this.totalScoreSpan = document.getElementById('totalScore');
+                this.resultMessage = document.getElementById('resultMessage');
+                this.resultScore = document.getElementById('resultScore');
+                
+                this.currentScore = 0;
+                this.totalScore = 0;
+                this.isGameActive = false;
+                this.animationId = null;
+                this.linePosition = 0;
+                this.targetPosition = window.innerHeight / 2;
+                
+                this.init();
+            }
+            
+            init() {
+                this.startButton.addEventListener('click', () => this.startGame());
+                this.playAgainButton.addEventListener('click', () => this.startGame());
+                document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+                document.addEventListener('click', () => this.handleClick());
+                
+                // Hide score display initially
+                this.scoreDisplay.classList.add('hidden');
+            }
+            
+            startGame() {
+                this.isGameActive = true;
+                this.currentScore = 0;
+                this.linePosition = 0;
+                
+                // Hide buttons and show game elements
+                this.startButton.classList.add('hidden');
+                this.playAgainButton.classList.add('hidden');
+                this.roundResult.classList.add('hidden');
+                this.fallingLine.classList.remove('hidden');
+                this.scoreDisplay.classList.remove('hidden');
+                
+                // Start falling animation
+                this.animateLine();
+            }
+            
+            animateLine() {
+                const animate = () => {
+                    if (!this.isGameActive) return;
+                    
+                    this.linePosition += 2; // Speed of falling line
+                    this.fallingLine.style.top = this.linePosition + 'px';
+                    
+                    // Check if line has passed the target
+                    if (this.linePosition >= this.targetPosition + 100) {
+                        this.endRound(0);
+                        return;
+                    }
+                    
+                    this.animationId = requestAnimationFrame(animate);
+                };
+                
+                animate();
+            }
+            
+            stopLine() {
+                if (!this.isGameActive) return;
+                
+                this.isGameActive = false;
+                cancelAnimationFrame(this.animationId);
+                
+                // Calculate score based on distance from target
+                const distance = Math.abs(this.linePosition - this.targetPosition);
+                let score = 0;
+                let message = '';
+                
+                if (distance <= 5) {
+                    score = 100;
+                    message = 'Perfect!';
+                } else if (distance <= 15) {
+                    score = 75;
+                    message = 'Great!';
+                } else if (distance <= 30) {
+                    score = 50;
+                    message = 'Good!';
+                } else if (distance <= 50) {
+                    score = 25;
+                    message = 'Close!';
+                } else {
+                    score = 0;
+                    message = 'Miss!';
+                }
+                
+                this.currentScore = score;
+                this.totalScore += score;
+                
+                this.showRoundResult(score, message);
+                this.updateScoreDisplay();
+            }
+            
+            showRoundResult(score, message) {
+                this.resultMessage.textContent = message;
+                this.resultScore.textContent = `Score: ${score}`;
+                this.roundResult.classList.remove('hidden');
+                this.playAgainButton.classList.remove('hidden');
+            }
+            
+            updateScoreDisplay() {
+                this.currentScoreSpan.textContent = this.currentScore;
+                this.totalScoreSpan.textContent = this.totalScore;
+            }
+            
+            handleKeyPress(e) {
+                if (e.code === 'Space' && this.isGameActive) {
+                    e.preventDefault();
+                    this.stopLine();
+                }
+            }
+            
+            handleClick() {
+                if (this.isGameActive) {
+                    this.stopLine();
+                }
+            }
+        }
+        
+        // Initialize the game when the page loads
+        window.addEventListener('load', () => {
+            new LineDropGame();
+        });
+    </script>
+</body>
+</html>
