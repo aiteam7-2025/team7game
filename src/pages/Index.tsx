@@ -1,215 +1,167 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-
-interface GameState {
-  isGameActive: boolean;
-  linePosition: number;
-  currentScore: number;
-  totalScore: number;
-  showResult: boolean;
-  resultMessage: string;
-  resultScore: number;
-}
+import React, { useState, useEffect, useRef } from 'react';
 
 const Index = () => {
-  const [gameState, setGameState] = useState<GameState>({
-    isGameActive: false,
-    linePosition: 0,
-    currentScore: 0,
-    totalScore: 0,
-    showResult: false,
-    resultMessage: '',
-    resultScore: 0
-  });
+  const [gameState, setGameState] = useState('start'); // 'start', 'playing', 'result'
+  const [linePosition, setLinePosition] = useState(0);
+  const [score, setScore] = useState(0);
+  const [totalScore, setTotalScore] = useState(0);
+  const [resultMessage, setResultMessage] = useState('');
+  
+  const animationRef = useRef(null);
+  const targetY = 300;
 
-  const animationRef = useRef<number | null>(null);
-  const targetPosition = 300;
+  const startGame = () => {
+    setGameState('playing');
+    setLinePosition(0);
+    setScore(0);
+  };
 
-  const startGame = useCallback(() => {
-    setGameState(prev => ({
-      ...prev,
-      isGameActive: true,
-      linePosition: 0,
-      showResult: false
-    }));
-  }, []);
-
-  const stopLine = useCallback(() => {
-    if (!gameState.isGameActive) return;
-
-    const distance = Math.abs(gameState.linePosition - targetPosition);
-    let score = 0;
+  const stopLine = () => {
+    if (gameState !== 'playing') return;
+    
+    const distance = Math.abs(linePosition - targetY);
+    let newScore = 0;
     let message = '';
-
-    if (distance <= 5) {
-      score = 100;
+    
+    if (distance <= 10) {
+      newScore = 100;
       message = 'Perfect!';
-    } else if (distance <= 15) {
-      score = 75;
+    } else if (distance <= 25) {
+      newScore = 75;
       message = 'Great!';
-    } else if (distance <= 30) {
-      score = 50;
+    } else if (distance <= 40) {
+      newScore = 50;
       message = 'Good!';
-    } else if (distance <= 50) {
-      score = 25;
+    } else if (distance <= 60) {
+      newScore = 25;
       message = 'Close!';
     } else {
-      score = 0;
+      newScore = 0;
       message = 'Miss!';
     }
-
-    setGameState(prev => ({
-      ...prev,
-      isGameActive: false,
-      currentScore: score,
-      totalScore: prev.totalScore + score,
-      showResult: true,
-      resultMessage: message,
-      resultScore: score
-    }));
-
+    
+    setScore(newScore);
+    setTotalScore(prev => prev + newScore);
+    setResultMessage(message);
+    setGameState('result');
+    
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
     }
-  }, [gameState.isGameActive, gameState.linePosition]);
+  };
 
-  const animateLine = useCallback(() => {
-    if (!gameState.isGameActive) return;
-
-    setGameState(prev => {
-      const newPosition = prev.linePosition + 2;
+  const animate = () => {
+    if (gameState !== 'playing') return;
+    
+    setLinePosition(prev => {
+      const newPos = prev + 3;
       
-      if (newPosition >= targetPosition + 100) {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-        return {
-          ...prev,
-          isGameActive: false,
-          showResult: true,
-          resultMessage: 'Miss!',
-          resultScore: 0
-        };
+      if (newPos > targetY + 100) {
+        setGameState('result');
+        setResultMessage('Miss!');
+        setScore(0);
+        return prev;
       }
-
-      return {
-        ...prev,
-        linePosition: newPosition
-      };
+      
+      return newPos;
     });
-
-    animationRef.current = requestAnimationFrame(animateLine);
-  }, [gameState.isGameActive]);
+    
+    animationRef.current = requestAnimationFrame(animate);
+  };
 
   useEffect(() => {
-    if (gameState.isGameActive) {
-      animationRef.current = requestAnimationFrame(animateLine);
+    if (gameState === 'playing') {
+      animationRef.current = requestAnimationFrame(animate);
     }
-
+    
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [gameState.isGameActive, animateLine]);
-
-  const handleKeyPress = useCallback((e: KeyboardEvent) => {
-    if (e.code === 'Space' && gameState.isGameActive) {
-      e.preventDefault();
-      stopLine();
-    }
-  }, [gameState.isGameActive, stopLine]);
-
-  const handleClick = useCallback(() => {
-    if (gameState.isGameActive) {
-      stopLine();
-    }
-  }, [gameState.isGameActive, stopLine]);
+  }, [gameState]);
 
   useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.code === 'Space' && gameState === 'playing') {
+        e.preventDefault();
+        stopLine();
+      }
+    };
+    
+    const handleClick = () => {
+      if (gameState === 'playing') {
+        stopLine();
+      }
+    };
+    
     document.addEventListener('keydown', handleKeyPress);
     document.addEventListener('click', handleClick);
-
+    
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
       document.removeEventListener('click', handleClick);
     };
-  }, [handleKeyPress, handleClick]);
+  }, [gameState, linePosition]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black flex items-center justify-center relative overflow-hidden">
-      {/* Game Container */}
-      <div className="relative w-full h-screen">
-        {/* Target Line */}
-        <div 
-          className="absolute left-0 w-full h-1 border-t-2 border-dotted border-red-500"
-          style={{ top: `${targetPosition}px` }}
+    <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
+      {/* Target Line */}
+      <div 
+        className="absolute left-0 w-full h-1 border-t-2 border-dotted border-red-500"
+        style={{ top: `${targetY}px` }}
+      />
+      
+      {/* Falling Line */}
+      {gameState === 'playing' && (
+        <div
+          className="absolute left-1/2 w-3 h-20 bg-green-500 rounded-full shadow-lg shadow-green-400/50 transform -translate-x-1/2"
+          style={{ top: `${linePosition}px` }}
         />
-        
-        {/* Falling Line */}
-        {gameState.isGameActive && (
-          <div
-            className="absolute left-1/2 w-2 h-16 bg-gradient-to-b from-green-400 to-green-600 rounded-full shadow-lg shadow-green-400/50 transform -translate-x-1/2 transition-all duration-100 ease-out"
-            style={{ top: `${gameState.linePosition}px` }}
-          />
-        )}
-
-        {/* Start Button */}
-        {!gameState.isGameActive && !gameState.showResult && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-10">
-            <h1 className="text-6xl font-bold text-white mb-8 drop-shadow-lg">
-              LINE DROP
-            </h1>
-            <p className="text-xl text-gray-300 mb-8 max-w-md">
-              Stop the falling line exactly on the target to score points!
-            </p>
-            <button
-              onClick={startGame}
-              className="px-12 py-6 text-2xl font-bold bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-green-500/50 border-2 border-green-400"
-            >
-              PLAY NOW
-            </button>
-          </div>
-        )}
-
-        {/* Play Again Button */}
-        {gameState.showResult && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-10">
-            <div className="bg-black/90 p-10 rounded-2xl border-2 border-green-400 mb-8">
-              <div className="text-2xl text-white mb-4">
-                {gameState.resultMessage}
-              </div>
-              <div className="text-5xl text-green-400 font-bold">
-                {gameState.resultScore}
-              </div>
-            </div>
-            <button
-              onClick={startGame}
-              className="px-12 py-6 text-2xl font-bold bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-green-500/50 border-2 border-green-400"
-            >
-              PLAY AGAIN
-            </button>
-          </div>
-        )}
-
-        {/* Score Display */}
-        <div className="absolute top-8 right-8 bg-black/80 p-6 rounded-xl border-2 border-green-400 backdrop-blur-sm">
-          <div className="text-3xl text-green-400 font-bold mb-2">
-            Score: {gameState.currentScore}
-          </div>
-          <div className="text-xl text-white">
-            Total: {gameState.totalScore}
-          </div>
+      )}
+      
+      {/* Start Screen */}
+      {gameState === 'start' && (
+        <div className="text-center text-white">
+          <h1 className="text-6xl font-bold mb-8">LINE DROP</h1>
+          <p className="text-xl mb-8">Click PLAY to start!</p>
+          <button
+            onClick={startGame}
+            className="px-12 py-6 text-2xl font-bold bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
+          >
+            PLAY
+          </button>
         </div>
-
-        {/* Instructions */}
-        {gameState.isGameActive && (
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 p-4 rounded-xl border border-gray-600 backdrop-blur-sm">
-            <div className="text-lg text-gray-300 font-medium">
-              Press SPACEBAR or CLICK to stop the line!
-            </div>
+      )}
+      
+      {/* Result Screen */}
+      {gameState === 'result' && (
+        <div className="text-center text-white">
+          <div className="bg-gray-800 p-8 rounded-2xl mb-8 border-2 border-green-500">
+            <div className="text-2xl mb-4">{resultMessage}</div>
+            <div className="text-5xl text-green-400 font-bold">{score}</div>
           </div>
-        )}
+          <button
+            onClick={startGame}
+            className="px-12 py-6 text-2xl font-bold bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
+          >
+            PLAY AGAIN
+          </button>
+        </div>
+      )}
+      
+      {/* Score Display */}
+      <div className="absolute top-8 right-8 bg-gray-800 p-4 rounded-lg border border-green-500 text-white">
+        <div className="text-xl text-green-400 mb-1">Score: {score}</div>
+        <div className="text-lg">Total: {totalScore}</div>
       </div>
+      
+      {/* Instructions */}
+      {gameState === 'playing' && (
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 p-4 rounded-lg border border-gray-600 text-white">
+          Press SPACEBAR or CLICK to stop the line!
+        </div>
+      )}
     </div>
   );
 };
